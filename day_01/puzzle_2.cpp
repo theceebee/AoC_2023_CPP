@@ -48,7 +48,6 @@ int main(int argc, char** argv)
 
         while ( getline(file, line) )
         {
-
             regex_search(line, startMatch, startPattern);
             regex_search(line, endMatch, endPattern);
 
