@@ -38,27 +38,22 @@ int main(int argc, char** argv)
     if (file.is_open())
     {
         int result = 0;
+        string prefix = "^.*";
+        string suffix = "(one|two|three|four|five|six|seven|eight|nine|[1-9])";
+        regex startPattern(prefix + "?" + suffix);  // non-greedy
+        regex endPattern(prefix + suffix);  // greedy
+
+        smatch startMatch;
+        smatch endMatch;
 
         while ( getline(file, line) )
         {
-            smatch sm;
-            regex pattern("one|two|three|four|five|six|seven|eight|nine|[1-9]");
-            regex_search(line, sm, pattern);
 
-            int a = processToken(sm.str());
-            int b;
+            regex_search(line, startMatch, startPattern);
+            regex_search(line, endMatch, endPattern);
 
-            size_t len = line.size();
-            for (int i = 1; i <= len; i++)
-            {
-                string ss = line.substr(len - i, i);
-                regex_search(ss, sm, pattern);
-                if (!sm.empty())
-                {
-                    b = processToken(sm.str());
-                    break;
-                }
-            }
+            int a = processToken(startMatch.str(1));
+            int b = processToken(endMatch.str(1));
 
             result += (a * 10) + b;
         }
