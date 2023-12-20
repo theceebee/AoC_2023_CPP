@@ -4,12 +4,10 @@
 #include <regex>
 using namespace std;
 
-const int maxR = 12;
-const int maxG = 13;
-const int maxB = 14;
 
+int processLine(string line) {
 
-int processLine(string line, int& indexSum) {
+    int minR, minG, minB = 0;
 
     regex indexPattern("Game ([0-9]+):\\s");
     regex setPattern("\\s?([^;]+);?");
@@ -31,12 +29,12 @@ int processLine(string line, int& indexSum) {
             int count = stoi(tokenIter->str(1));
             string colour = tokenIter->str(2);
 
-            if (colour == "red" && count > maxR)
-                return 0; 
-            else if (colour == "green" && count > maxG)
-                return 0;
-            else if (colour == "blue" && count > maxB)
-                return 0;
+            if (colour == "red" && count > minR)
+                minR = count;
+            else if (colour == "green" && count > minG)
+                minG = count;
+            else if (colour == "blue" && count > minB)
+                minB = count;
 
             tokenIter++;
         }
@@ -44,9 +42,7 @@ int processLine(string line, int& indexSum) {
         setIter++;
     }
 
-    indexSum += stoi(indexMatch.str(1));
-
-    return 1;
+    return minR * minG * minB;
 }
 
 
@@ -59,7 +55,7 @@ int main(int argc, char** argv)
         string line;
         while ( getline(file, line) )
         {
-            processLine(line, result);
+            result += processLine(line);
         }
     }
     cout << result << endl;
