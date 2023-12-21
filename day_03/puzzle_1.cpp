@@ -1,65 +1,102 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <queue>
 #include <regex>
+#include <cmath>
 using namespace std;
 
 
 int main(int argc, char** argv)
 {
-    ifstream file (argv[1]);
+    int result = 0;
+    ifstream file(argv[1]);
     if (file.is_open())
     {
-        int result = 0;
-        queue<string> buffer;
         string line;
+        getline(file, line);
+        int columns = line.length();
 
-        vector<int> symbol_indexes_a;
-        vector<int> symbol_indexes_b;
+        file.seekg(0, file.end);
+        int file_length = file.tellg();
+        file.seekg(0, file.beg);
+
+        int rows = file_length / (columns + 1);  // Add 1 to account for the newline character.
+
+        int row_sentinel = 0;
 
         regex numbers ("\\d+");
+        regex symbols("[^.0-9]");
+        smatch sm;
 
         while (getline( file, line ))
         {
-            buffer.push(line);
+            bool prev, next = false;
+            string prev_line, next_line;
 
-            cout << line << endl;
+            if (row_sentinel > 0)
+            {
+                file.seekg((row_sentinel - 1) * (columns + 1), file.beg);
+                getline(file, prev_line);
+                prev = true;
+            }
+
+            if (row_sentinel < rows - 1)
+            {
+                file.seekg((row_sentinel + 1) * (columns + 1), file.beg);
+                getline(file, next_line);
+                next = true;
+            }
+
             auto it = sregex_iterator(line.begin(), line.end(), numbers);
             for (; it != sregex_iterator() ; it++)
             {
-                cout << "number: " << it->str() << " position: " << it->position() << " length: " << it->length() << endl;
+                bool is_part_number = false;
 
-                // Use a sentinel to ensure that we don't
-                bool sentinel = false;
+                int match_pos = it->position();
+                int match_len = it->length();
 
-                // Check for any symbol infront of the number.
-                if (it->position() != 0)
+                // We need the diagonally adjacent chars, but we need to account for the case where the number starts
+                // at the 0th index in the sequence.
+                int substr_pos = fmax(0, match_pos - 1);
+                int substr_len = match_len + (match_pos == 0 ? 1 : 2);
+
+                string adjacent_line;
+                string adjacent_substr;
+
+                // Check the prev row.
+                if (prev)
                 {
-
+                    adjacent_substr = prev_line.substr(substr_pos, substr_len);
+                    regex_search(adjacent_substr, sm, symbols);
+                    if (!sm.empty())
+                        is_part_number = true;
                 }
 
+                // Check the current row, first checking for any symbol immediately before the number...
+                if (!is_part_number && match_pos != 0 && line[match_pos - 1] != '.')
+                    is_part_number = true;
 
+                // ... and then immediately after it.
+                if (!is_part_number && match_pos + match_len != columns && line[match_pos + match_len] != '.')
+                    is_part_number = true;
 
-                switch (it->position())
+                // Check the next row.
+                if (!is_part_number && next)
                 {
-                    case 0:
-                        break;
-                    case (line.length() - it->length()):
-                        break;
-                    default:
-
+                    adjacent_substr = next_line.substr(substr_pos, substr_len);
+                    regex_search(adjacent_substr, sm, symbols);
+                    if (!sm.empty())
+                        is_part_number = true;
                 }
 
-                
-            
+                if (is_part_number)
+                    result += stoi(it->str());
             }
 
-            if (buffer.size() > 1)
-            {
-                buffer.pop();
-            }
+            row_sentinel++;
+            file.seekg(row_sentinel * (columns + 1), file.beg);
         }
     }
+    cout << result << endl;
     return 0;
 }
