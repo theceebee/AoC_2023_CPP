@@ -2,8 +2,23 @@
 #include <fstream>
 #include <string>
 #include <regex>
-#include <cmath>
 using namespace std;
+
+
+void find_adjacent_parts(int gear_pos, string line, vector<int>& parts)
+{
+    regex numbers ("\\d+");
+
+    auto it = sregex_iterator(line.begin(), line.end(), numbers);
+    for (; it != sregex_iterator() ; it++)
+    {
+        int match_pos = it->position();
+        int match_len = it->length();
+
+        if (match_pos <= (gear_pos + 1) && (match_pos + match_len - 1) >= (gear_pos - 1))
+            parts.push_back(stoi(it->str()));
+    }
+}
 
 
 int main(int argc, char** argv)
@@ -24,10 +39,7 @@ int main(int argc, char** argv)
 
         int row_sentinel = 0;
 
-        regex gear ("\\*");
-        regex numbers ("\\d+");
-        regex symbols("[^.0-9]");
-        smatch sm;
+        regex gear ("([0-9]+)?(\\*)([0-9]+)?");
 
         while (getline( file, line ))
         {
@@ -48,54 +60,29 @@ int main(int argc, char** argv)
                 next = true;
             }
 
-            cout << "line: " << line << endl;
-
             auto it = sregex_iterator(line.begin(), line.end(), gear);
             for (; it != sregex_iterator() ; it++)
             {
-                // bool is_part_number = false;
+                vector<int> parts;
 
-                int match_pos = it->position();
+                int match_pos = it->position(2);
 
-                cout << "gear position: " << match_pos << endl;
+                if (!it->str(1).empty())
+                    parts.push_back(stoi(it->str(1)));
 
+                if (!it->str(3).empty())
+                    parts.push_back(stoi(it->str(3)));
 
-            //     // We need the diagonally adjacent chars, but we need to account for the case where the number starts
-            //     // at the 0th index in the sequence.
-            //     int substr_pos = fmax(0, match_pos - 1);
-            //     int substr_len = match_len + (match_pos == 0 ? 1 : 2);
+                // In the simplest case there is a part number either side of the asterisk on the same line. Beyond
+                // that we'll need to explore the line above/below for other part numbers.
+                if (prev && parts.size() < 2)
+                    find_adjacent_parts(match_pos, prev_line, parts);
 
-            //     string adjacent_line;
-            //     string adjacent_substr;
+                if (next && parts.size() < 2)
+                    find_adjacent_parts(match_pos, next_line, parts);
 
-            //     // Check the prev row.
-            //     if (prev)
-            //     {
-            //         adjacent_substr = prev_line.substr(substr_pos, substr_len);
-            //         regex_search(adjacent_substr, sm, symbols);
-            //         if (!sm.empty())
-            //             is_part_number = true;
-            //     }
-
-            //     // Check the current row, first checking for any symbol immediately before the number...
-            //     if (!is_part_number && match_pos != 0 && line[match_pos - 1] != '.')
-            //         is_part_number = true;
-
-            //     // ... and then immediately after it.
-            //     if (!is_part_number && match_pos + match_len != columns && line[match_pos + match_len] != '.')
-            //         is_part_number = true;
-
-            //     // Check the next row.
-            //     if (!is_part_number && next)
-            //     {
-            //         adjacent_substr = next_line.substr(substr_pos, substr_len);
-            //         regex_search(adjacent_substr, sm, symbols);
-            //         if (!sm.empty())
-            //             is_part_number = true;
-            //     }
-
-            //     if (is_part_number)
-            //         result += stoi(it->str());
+                if (parts.size() == 2)
+                    result += parts[0] * parts[1];
             }
 
             row_sentinel++;
