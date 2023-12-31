@@ -2,6 +2,7 @@
 #include <fstream>
 #include <limits>
 #include <string>
+#include <utility>
 #include "inputdata.h"
 #include "utils.h"
 using namespace std;
@@ -49,14 +50,15 @@ int main(int argc, char** argv)
                 }            
             }
 
-            long temp;
             long result = numeric_limits<long>::max();
 
-            for (auto seed : seeds)
+            for (int j = 0; j < seeds.size() / 2; j++)
             {
-                temp = data.get_location_for_seed(seed);
-                if (temp < result)
-                    result = temp;
+                for (pair<long, long> locations : data.map_seeds_to_locations(seeds[j * 2], seeds[j * 2 + 1]))
+                {
+                    if (locations.first < result)
+                        result = locations.first;
+                }
             }
 
             cout << result << endl;
