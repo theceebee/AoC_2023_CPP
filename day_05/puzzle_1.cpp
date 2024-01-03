@@ -1,66 +1,70 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <limits>
+#include <sstream>
 #include <string>
-#include "inputdata.h"
+#include <vector>
 #include "utils.h"
 using namespace std;
 
-
-int main(int argc, char** argv)
+vector<Range> get_seeds(ifstream &input)
 {
-    if (argc == 2)
+    vector<Range> result;
+    string line, chomp;
+
+    getline(input, line);
+    istringstream ss(line);
+
+    // Chomp the start of the line.
+    ss >> chomp;
+
+    long long start;
+
+    while (ss >> start)
     {
-        ifstream file(argv[1]);
-        if (file.is_open())
+        result.push_back({start, 1});
+    }
+
+    // Chomp the empty line.
+    getline(input, chomp);
+
+    return result;
+}
+
+
+int main(int argc, char **argv)
+{
+    ifstream file(argv[1]);
+    if (file.is_open())
+    {
+        const auto seeds = get_seeds(file);
+        const auto seed_to_soil = get_mappings(file);
+        const auto soil_to_fertilizer = get_mappings(file);
+        const auto fertilizer_to_water = get_mappings(file);
+        const auto water_to_light = get_mappings(file);
+        const auto light_to_temperature = get_mappings(file);
+        const auto temperature_to_humidity = get_mappings(file);
+        const auto humidity_to_location = get_mappings(file);
+
+        const auto soils = remap(seeds, seed_to_soil);
+        const auto fertilizers = remap(soils, soil_to_fertilizer);
+        const auto waters = remap(fertilizers, fertilizer_to_water);
+        const auto lights = remap(waters, water_to_light);
+        const auto temperatures = remap(lights, light_to_temperature);
+        const auto humidities = remap(temperatures, temperature_to_humidity);
+        const auto locations = remap(humidities, humidity_to_location);
+
+        long long lowest_location = numeric_limits<long long>::max();
+
+        for (auto location: locations)
         {
-            InputData data;
-            string line;
-
-            // Get the seeds.
-            getline(file, line);
-
-            int i = line.find_first_of(' ');
-            vector<long> seeds;
-            parse_line(line.substr(i + 1), seeds);
-
-            int type = -1;
-
-            while (getline(file, line))
+            if (location.start < lowest_location)
             {
-                if (line.length() == 0)
-                {
-                    // chomp the header line
-                    getline(file, line);
-
-                    // increment the type
-                    type++;
-                }
-                else
-                {
-                    vector<long> temp;
-                    parse_line(line, temp);
-                    data.append_range_data(
-                        /*dst_start*/ temp[0],
-                        /*src_start*/ temp[1],
-                        /*length*/ temp[2],
-                        /*type*/ static_cast<InputDataType>(type)
-                    );
-                }            
+                lowest_location = location.start;
             }
-
-            long temp;
-            long result = numeric_limits<long>::max();
-
-            for (auto seed : seeds)
-            {
-                temp = data.get_location_for_seed(seed);
-                if (temp < result)
-                    result = temp;
-            }
-
-            cout << result << endl;
         }
+
+        cout << lowest_location << endl;
     }
     return 0;
 }
