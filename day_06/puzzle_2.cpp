@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include "utils.h"
 using namespace std;
 
 
@@ -19,12 +20,6 @@ long parse_line(istream& stream)
     }
 
     return stol(result);
-}
-
-
-long get_distance_travelled(long time_pressed, long total_time)
-{
-    return time_pressed * (total_time - time_pressed);
 }
 
 
